@@ -136,7 +136,8 @@ x_lim = 2.0
 
 hist_all <- hist_tb %>%
   group_by(x) %>%
-  summarize(mean = mean(y, na.rm=TRUE))
+  summarize(mean = mean(y, na.rm=TRUE)) %>%
+  mutate(x = x/3600)
 
 cp <- ggplot(head(hist_all,-1), aes(x,mean)) +
   theme_bw() +
@@ -144,63 +145,28 @@ cp <- ggplot(head(hist_all,-1), aes(x,mean)) +
   geom_line(size=1) +
   coord_cartesian(xlim=c(0,x_lim), ylim=c(0,y_lim)) +
   theme(axis.text=element_text(size=18),
-        axis.title=element_text(size=20,face="bold"))
+        axis.title=element_text(size=20,face="bold")) +
+  xlab("Time (hour)") +
+  ylab("Number of bouts/min")
 cp
 ggsave(paste0(exp_name,"_all96.png"), cp)
 
 
 ####################################################################################
-# different groupings
-
-plot_twogroups <- function (y_lim=100) {
-  hist_grps <- hist_tb %>% 
-    left_join(grps, c("ARENA" = "a")) %>% 
-    group_by(x, grp) %>%
-    summarize(mean = mean(y, na.rm=TRUE)) %>%
-    ungroup %>%
-    group_by(grp) %>%
-    mutate(cum = cummean(mean)) %>%
-    mutate(x = x/3600)
-  cp <- ggplot(head(hist_grps,-2), aes(x,mean)) +
-    theme_bw() +
-    geom_ribbon(aes(ymin=mean*0.9, ymax=mean*1.1,fill=grp), alpha=0.2) +
-    scale_fill_manual(breaks = grp_nm, values=c("black", "red")) +
-    geom_line(aes(color=grp), size=1) +
-    scale_color_manual(breaks = grp_nm, values=c("black", "red")) +
-    coord_cartesian(xlim=c(0,x_lim), ylim=c(0,y_lim)) +
-    theme(axis.text=element_text(size=18),
-          axis.title=element_text(size=20,face="bold")) +
-    xlab("Time (hour)") +
-    ylab("Number of bouts/min")
-  cp
-  ggsave(paste0(exp_name,"_mean_",grp_nm[1],"_",grp_nm[2],".png"), cp)
-  ggsave(paste0(exp_name,"_mean_",grp_nm[1],"_",grp_nm[2],".pdf"), cp)
-  
-  # cummean
-  cp <- ggplot(head(hist_grps,-2), aes(x,cum)) +
-    theme_bw() +
-    geom_ribbon(aes(ymin=cum*0.9, ymax=cum*1.1,fill=grp), alpha=0.2) +
-    scale_fill_manual(breaks = grp_nm, values=c("black", "red")) +
-    geom_line(aes(color=grp), size=1) +
-    scale_color_manual(breaks = grp_nm, values=c("black", "red")) +
-    coord_cartesian(xlim=c(0,x_lim), ylim=c(0,y_lim)) +
-    theme(axis.text=element_text(size=18),
-          axis.title=element_text(size=20,face="bold")) +
-    xlab("Time (sec)") +
-    ylab("Number of bouts/min")
-  cp
-  ggsave(paste0(exp_name,"_cummean_",grp_nm[1],"_",grp_nm[2],".png"), cp)
-  ggsave(paste0(exp_name,"_cummean_",grp_nm[1],"_",grp_nm[2],".pdf"), cp)
-  
-}
-
 
 grp_nm <- c("odd_row", "even_row")
 grps <- tibble(
   "a"= paste0('a',seq(1,96)),
   "grp"= rep(c(rep(grp_nm[1],12),rep(grp_nm[2],12)),4)
 )
-plot_twogroups(x_lim=x_lim, y_lim=y_lim)
+hist_grps <- hist_tb %>% 
+  left_join(grps, c("ARENA" = "a")) %>% 
+  group_by(x, grp) %>%
+  summarize(mean = mean(y, na.rm=TRUE)) %>%
+  ungroup %>%
+  group_by(grp) %>%
+  mutate(cum = cummean(mean)) %>%
+  mutate(x = x/3600)
 
 #plot the histogram for two groupings
 hist_total_grps <- hist_tb_total %>% 
@@ -213,27 +179,54 @@ p
 ggsave(paste0(exp_name,"_movement_histogram.png"), p)
 
 
-grp_nm <- c("odd_col", "even_col")
-grps <- tibble(
-  "a"= paste0('a',seq(1,96)),
-  "grp"= rep(c(grp_nm[1], grp_nm[2]), 48)
-)
-plot_twogroups(x_lim=x_lim, y_lim=y_lim)
+#plot the mean and cummean
+cp <- ggplot(head(hist_grps,-2), aes(x,mean)) +
+  theme_bw() +
+  geom_ribbon(aes(ymin=mean*0.9, ymax=mean*1.1,fill=grp), alpha=0.2) +
+  scale_fill_manual(breaks = grp_nm, values=c("black", "red")) +
+  geom_line(aes(color=grp), size=1) +
+  scale_color_manual(breaks = grp_nm, values=c("black", "red")) +
+  coord_cartesian(xlim=c(0,x_lim), ylim=c(0,y_lim)) +
+  theme(axis.text=element_text(size=18),
+        axis.title=element_text(size=20,face="bold")) +
+  xlab("Time (hour)") +
+  ylab("Number of bouts/min")
+cp
+ggsave(paste0(exp_name,"_mean_",grp_nm[1],"_",grp_nm[2],".png"), cp)
+ggsave(paste0(exp_name,"_mean_",grp_nm[1],"_",grp_nm[2],".pdf"), cp)
 
-grp_nm <- c("upper_row", "lower_row")
-grps <- tibble(
-  "a"= paste0('a',seq(1,96)),
-  "grp"= c(rep(grp_nm[1],48), rep(grp_nm[2],48))
-)
-plot_twogroups(x_lim=x_lim, y_lim=y_lim)
+# cummean
+cp <- ggplot(head(hist_grps,-2), aes(x,cum)) +
+  theme_bw() +
+  geom_ribbon(aes(ymin=cum*0.9, ymax=cum*1.1,fill=grp), alpha=0.2) +
+  scale_fill_manual(breaks = grp_nm, values=c("black", "red")) +
+  geom_line(aes(color=grp), size=1) +
+  scale_color_manual(breaks = grp_nm, values=c("black", "red")) +
+  coord_cartesian(xlim=c(0,x_lim), ylim=c(0,y_lim)) +
+  theme(axis.text=element_text(size=18),
+        axis.title=element_text(size=20,face="bold")) +
+  xlab("Time (hour)") +
+  ylab("Number of bouts/min")
+cp
+ggsave(paste0(exp_name,"_cummean_",grp_nm[1],"_",grp_nm[2],".png"), cp)
+ggsave(paste0(exp_name,"_cummean_",grp_nm[1],"_",grp_nm[2],".pdf"), cp)
 
-grp_nm <- c("left_col", "right_col")
-grps <- tibble(
-  "a"= paste0('a',seq(1,96)),
-  "grp"= rep(c(rep(grp_nm[1],6), rep(grp_nm[2],6)), 8)
-)
-plot_twogroups(x_lim=x_lim, y_lim=y_lim)
 
+####################################################################################
+# paired t.test output
+
+g1 <- hist_grps %>% ungroup() %>% filter(grp==grp_nm[1]) %>% dplyr::select(mean)
+g2 <- hist_grps %>% ungroup() %>% filter(grp==grp_nm[2]) %>% dplyr::select(mean)
+sink(paste0(exp_name,"_mean_",grp_nm[1],"_",grp_nm[2],".ttest.txt"))
+res <- t.test(g1[[1]], g2[[1]], paired = TRUE, na.action=na.omit)
+print(res)
+sink()
+
+g1 <- hist_grps %>% ungroup() %>% filter(grp==grp_nm[1]) %>% dplyr::select(cum)
+g2 <- hist_grps %>% ungroup() %>% filter(grp==grp_nm[2]) %>% dplyr::select(cum)
+sink(paste0(exp_name,"_cummean_",grp_nm[1],"_",grp_nm[2],".ttest.txt"))
+res <- t.test(g1[[1]], g2[[1]], paired = TRUE, na.action=na.omit)
+sink()
 
 
 
