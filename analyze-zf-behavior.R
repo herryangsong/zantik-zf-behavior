@@ -226,6 +226,7 @@ g1 <- hist_grps %>% ungroup() %>% filter(grp==grp_nm[1]) %>% dplyr::select(cum)
 g2 <- hist_grps %>% ungroup() %>% filter(grp==grp_nm[2]) %>% dplyr::select(cum)
 sink(paste0(exp_name,"_cummean_",grp_nm[1],"_",grp_nm[2],".ttest.txt"))
 res <- t.test(g1[[1]], g2[[1]], paired = TRUE, na.action=na.omit)
+print(res)
 sink()
 
 
